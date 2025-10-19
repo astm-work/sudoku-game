@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数独ゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .info-box {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            gap: 0;
+            border: 3px solid #333;
+            margin: 0 auto 20px;
+            width: fit-content;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            background: white;
+            transition: background 0.2s;
+        }
+
+        .cell:hover:not(.fixed) {
+            background: #e3f2fd;
+        }
+
+        .cell.fixed {
+            background: #f5f5f5;
+            color: #000;
+            cursor: default;
+        }
+
+        .cell.selected {
+            background: #bbdefb !important;
+        }
+
+        .cell.error {
+            background: #ffcdd2 !important;
+            color: #c62828;
+        }
+
+        .cell.highlighted {
+            background: #fff9c4;
+        }
+
+        .cell:nth-child(3n):not(:nth-child(9n)) {
+            border-right: 2px solid #333;
+        }
+
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 2px solid #333;
+        }
+
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .number-btn, .action-btn {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .number-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .number-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .action-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .action-btn:hover {
+            background: #ee5a52;
+            transform: translateY(-2px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #4caf50;
+            color: white;
+        }
+
+        .control-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .control-btn.secondary {
+            background: #2196f3;
+        }
+
+        .control-btn.secondary:hover {
+            background: #0b7dda;
+        }
+
+        .difficulty {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .difficulty-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+            display: block;
+        }
+
+        .message.error {
+            background: #ffcdd2;
+            color: #c62828;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数独ゲーム</h1>
+
+        <div class="game-info">
+            <div class="info-box">難易度: <span id="difficulty-display">普通</span></div>
+            <div class="info-box">時間: <span id="timer">00:00</span></div>
+            <div class="info-box">ミス: <span id="mistakes">0</span></div>
+        </div>
+
+        <div class="difficulty">
+            <button class="difficulty-btn" data-difficulty="easy">簡単</button>
+            <button class="difficulty-btn active" data-difficulty="medium">普通</button>
+            <button class="difficulty-btn" data-difficulty="hard">難しい</button>
+        </div>
+
+        <div class="sudoku-board" id="board"></div>
+
+        <div class="number-pad">
+            <button class="number-btn" data-number="1">1</button>
+            <button class="number-btn" data-number="2">2</button>
+            <button class="number-btn" data-number="3">3</button>
+            <button class="number-btn" data-number="4">4</button>
+            <button class="number-btn" data-number="5">5</button>
+            <button class="number-btn" data-number="6">6</button>
+            <button class="number-btn" data-number="7">7</button>
+            <button class="number-btn" data-number="8">8</button>
+            <button class="number-btn" data-number="9">9</button>
+            <button class="action-btn" id="clear-btn">消去</button>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="new-game-btn">新しいゲーム</button>
+            <button class="control-btn secondary" id="hint-btn">ヒント</button>
+            <button class="control-btn secondary" id="check-btn">チェック</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script src="sudoku.js"></script>
+</body>
+</html>
